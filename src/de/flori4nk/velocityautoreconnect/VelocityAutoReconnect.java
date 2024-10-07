@@ -110,6 +110,10 @@ public class VelocityAutoReconnect {
             if (connectedPlayers.isEmpty()) return;
             
             Player nextPlayer = connectedPlayers.iterator().next();
+                    if (VelocityAutoReconnect.getConfigurationManager().getBooleanProperty("bypasscheck")
+                            && nextPlayer.hasPermission("velocityautoreconnect.bypass")) {
+                        return;
+                    }
             RegisteredServer previousServer = playerManager.getPreviousServer(nextPlayer);
 
             // If enabled, check if a server responds to pings before connecting
