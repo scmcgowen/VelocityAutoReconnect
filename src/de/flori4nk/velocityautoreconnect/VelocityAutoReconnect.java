@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import com.velocitypowered.api.event.EventManager;
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.command.CommandExecuteEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
@@ -36,6 +37,9 @@ import de.flori4nk.velocityautoreconnect.storage.PlayerManager;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -83,6 +87,8 @@ public class VelocityAutoReconnect {
         return playerManager;
     }
 
+    public static Map<UUID,Boolean> userManualMove = new HashMap<>();
+
     @Subscribe(order = PostOrder.NORMAL)
     public void onInitialize(ProxyInitializeEvent event) {
         // do not remove.
@@ -111,7 +117,7 @@ public class VelocityAutoReconnect {
             
             Player nextPlayer = connectedPlayers.iterator().next();
                     if (VelocityAutoReconnect.getConfigurationManager().getBooleanProperty("bypasscheck")
-                            && nextPlayer.hasPermission("velocityautoreconnect.bypass")) {
+                            && nextPlayer.hasPermission("velocityautoreconnect.bypass") || userManualMove.getOrDefault(nextPlayer.getUniqueId(),false)) {
                         return;
                     }
             RegisteredServer previousServer = playerManager.getPreviousServer(nextPlayer);
@@ -142,6 +148,23 @@ public class VelocityAutoReconnect {
         })
             .repeat(configurationManager.getIntegerProperty("task-interval-ms"), TimeUnit.MILLISECONDS)
             .schedule();
+    }
+
+    @Subscribe
+    public void onCommand(CommandExecuteEvent event) {
+        if (!(event.getCommandSource() instanceof  Player player)) return;
+        String command = event.getCommand().toLowerCase();
+        if (command.startsWith("server ")) {
+            var currentServer = player.getCurrentServer();
+            if (currentServer.equals(limboServer)) {
+                // player is in limbo and leaving
+                userManualMove.put(player.getUniqueId(),false);
+            }
+            else {
+                // player is not in limbo and is going to a server. we will check if its limbo when they connect
+                userManualMove.put(player.getUniqueId(),true);
+            }
+        }
     }
 
 

@@ -59,6 +59,7 @@ public class ConnectionListener {
 
         // If a player gets redirected from Limbo to another server, remove them from the Map
         if (Utility.doServerNamesMatch(previousServer, VelocityAutoReconnect.getLimboServer())) {
+            VelocityAutoReconnect.userManualMove.put(player.getUniqueId(),false);
             VelocityAutoReconnect.getPlayerManager().removePlayer(player);
             return;
         }
